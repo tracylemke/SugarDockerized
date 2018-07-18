@@ -1,12 +1,13 @@
-# Sugar Dockerized
+# Sugar Dockerized [![Build Status](https://travis-ci.org/esimonetti/SugarDockerized.svg?branch=master)](https://travis-ci.org/esimonetti/SugarDockerized)
 This repository will help you deploy a Docker based development full stack for Sugar, meeting all the platform requirements for a different set of platform combinations.
 
 ## Stacks available
 There are few stacks available, with in itself multiple platform combinations. You can read more about the specific stacks on the links below:
+* [Sugar 81](stacks/sugar81/README.md) - For local development to apply to Sugar Cloud only versions
 * [Sugar 8](stacks/sugar8/README.md)
+* [Sugar 710 or Sugar 711](stacks/sugar710/README.md) - For local development to apply to Sugar Cloud only versions
 * [Sugar 79](stacks/sugar79/README.md)
 * [Sugar 79 upgraded to a future version](stacks/sugar79upgrade/README.md)
-* [Sugar 710 or Sugar 711](stacks/sugar710/README.md) - For local development to apply to Sugar cloud only versions
 
 ### Types of stacks
 There are mainly two types of stack:
@@ -20,7 +21,7 @@ There are multiple stack components as docker containers, that perform different
 * MySQL database - Database
 * Elasticsearch - Sugar search engine
 * Redis - Two purposes: Sugar object caching service and PHP Session storage/sharing service
-* Cron - Sugar background scheduler processing. Note that this is enabled immediately and it will run `cron.php` as soon as the file is available, and it will attempt to do so every 60 seconds since its last run.
+* Cron - Sugar background scheduler processing. Note that this is enabled immediately and it will run `cron.php` as soon as the file is available, and it will attempt to do so every 60 seconds since its last run. This container is used for any other CLI execution required during development
 * Permission - Sets Sugar instance permissions correctly and then terminates
 * LDAP - LDAP testing server if needed with authentication
 
@@ -31,7 +32,7 @@ There are multiple stack components as docker containers, that perform different
 * Run `docker-compose -f <stack yml filename> up -d` for the selected <stack yml filename>. As an example if we selected `stacks/sugar8/php71.yml`, you would run `docker-compose -f stacks/sugar8/php71.yml up -d`
 
 ## Current version support
-The main stacks work with [Sugar version 8.0 and all its platform requirements](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_8.0.x_Supported_Platforms/). Additional stacks are aligned with the platform requirements of version [7.9](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_7.9.x_Supported_Platforms/), 7.10/7.11 Sugar cloud only version.
+The main stacks work with [Sugar version 8.0 and all its platform requirements](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_8.0.x_Supported_Platforms/). Additional stacks are aligned with the platform requirements of version [7.9](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_7.9.x_Supported_Platforms/) and the Sugar Cloud only versions: 7.10/7.11 and 8.1.
 
 ## Starting and stopping the desired stack
 * Run the stack with `docker-compose -f <stack yml filename> up -d`
@@ -43,7 +44,7 @@ The main stacks work with [Sugar version 8.0 and all its platform requirements](
 * Apache load balancer: sugar-lb
 * Apache PHP web server: On single stack: sugar-web1 On cluster stack: sugar-web1 and sugar-web2
 * MySQL database: sugar-mysql
-* Elasticsearch: sugar-elasticsearch (on stack with both elasticsearches sugar-elasticsearch for version 1.7.5 and sugar-elasticsearch56 for version 5.6)
+* Elasticsearch: sugar-elasticsearch
 * Redis - sugar-redis
 * Cron - sugar-cron
 * Permission - sugar-permissions
@@ -80,6 +81,7 @@ Apache web servers have enabled:
 Apache web servers have PHP with enabled:
 * Zend OPcache - Configured for Sugar with the assumption the files will be located within the correct path
 * xdebug
+    * If you use IDE such as PHPStorm, you can setup DBGp Proxy in Preference -> Language & Framework -> PHP -> Debug -> DBGp Proxy. Here is an example setting: <img width="1026" alt="screen shot 2018-04-18 at 10 17 53 pm" src="https://user-images.githubusercontent.com/361254/38972661-d48661f6-4356-11e8-9245-ad598239fe94.png">
 * XHProf or Tideways profilers depending on the version
 
 Session storage is completed leveraging the Redis container.
@@ -98,6 +100,7 @@ Alternatively the limit can be increased runtime with:
 * `images/elasticsearch/175/` - Elasticsearch 1.7.5
 * `images/elasticsearch/54/` - Elasticsearch 5.4
 * `images/elasticsearch/56/` - Elasticsearch 5.6
+* `images/elasticsearch/62/` - Elasticsearch 6.2
 * `images/ldap/` - OpenLDAP
 * `images/loadbalancer/` - Apache load balancer
 * `images/mysql/57/` - MySQL 5.7
@@ -113,7 +116,7 @@ All images are currently leveraging Debian linux.
 All persistent storage is located within the `./data` directory tree within your local checkout of this git repository.
 * The Sugar application files served from the web servers and leveraged by the cronjob server have to be located in `./data/app/sugar/`. Within the web servers and the cronjob server the location is `/var/www/html/sugar/`. Everything within `./data/app/` can be accessed through the browser, but the Sugar instance files have to be within `./data/app/sugar/`
 * MySQL files are located in `./data/mysql/57/`
-* For Elasticsearch 5.6 files are located in `./data/elasticsearch/56/`. For Elasticsearch 5.4 files are located in `./data/elasticsearch/54/`. For Elasticsearch 1.7.5 files are located in `./data/elasticsearch/175/`.
+* For Elasticsearch 6.2 files are located in `./data/elasticsearch/62/`. For Elasticsearch 5.6 files are located in `./data/elasticsearch/56/` and so on.
 * Redis files are located in `./data/redis/`
 * LDAP files are located in `./data/ldap/`
 
@@ -126,9 +129,52 @@ This setup is designed to run only a single Sugar instance. It also requires the
 3. Cronjob background process running
 
 For the above reasons the single instance Sugar's files have to be located inside `./data/app/sugar/` (without subdirectories), for the stack setup to be working as expected.
-If you do need multiple instances (eg: a Sugar version 8 and a version 7.9), as long as they are not running at the same time, you could have a git clone for each setup and start/stop the relevant stack as needed. Alternatively it might be possible to have different data directory trees that are moved between stack stop/restarts.
+If you do need multiple instances (eg: a Sugar version 8 and a version 7.9), as long as they are not running at the same time, you can leverage the provided tools to replicate and swap the data directories.
 
 ## Tips
+### Utilities
+To help with development, there are a set of tools within the `utilities` directory of the repository.
+#### stack.sh
+```./utilities/stack.sh 80 down```
+```
+./utilities/stack.sh 80 down
+stacks/sugar8/php71.yml down
+Stopping sugar-cron          ... done
+Stopping sugar-web1          ... done
+Stopping sugar-redis         ... done
+Stopping sugar-mysql         ... done
+Stopping sugar-elasticsearch ... done
+Removing sugar-cron          ... done
+Removing sugar-web1          ... done
+Removing sugar-redis         ... done
+Removing sugar-mysql         ... done
+Removing sugar-permissions   ... done
+Removing sugar-elasticsearch ... done
+Removing network sugar8_default
+No stopped containers
+```
+It helps to take the default stack for the sugar version passed as a parameter, up or down. It expects two parameters: version number (eg: 79, 80, 81) and up/down
+#### copysystem.sh
+```./utilities/copysystem.sh data_80_clean data_80_clean_copy```
+```
+Copying "data_80_clean" to "data_80_clean_copy"
+Copying data_80_clean to data_80_clean_copy
+Copy completed, you can now swap or start the system
+```
+It helps to replicate a full `data_80_clean` content to another backup directory of choice (`data_80_clean_copy`). It requires the stack to be off (and it will check for it)
+#### swapsystems.sh
+```./utilities/swapsystems.sh backup_2018_06_28 data_80_clean```
+```
+Moving "data" to "backup_2018_06_28" and "data_80_clean" to "data"
+Moving data to backup_2018_06_28
+Moving data_80_clean to data
+You can now start the system with the content of data_80_clean
+```
+It helps to move the current `data` directory to `backup_2018_06_28` and then `data_80_clean` to `data`, effectively swapping the current data in use. It requires the stack to be off (and it will check for it)
+#### runcli.sh
+```./utilities/runcli.sh "php ./bin/sugarcrm password:weak"```
+It helps to execute a command within the CLI container. It requires the stack to be on
+
 ### Detect web server PHP error logs
 To be able to achieve this consistently, it is recommended to leverage the single web server stack.
 By running the command `docker logs -f sugar-web1` it is then possible to tail the output from the access and error log of Apache and/or PHP
@@ -150,26 +196,6 @@ To run the repair from the docker host, assuming that the repository has been ch
 cd sugardocker
 ./repair
 ```
-
-### Simplify stack startup and shutdown
-Once you choose the most commonly used stack for the job, you could simply create two bash scripts to start/stop your cluster. Examples of how those could look like are below:
-
-Start (eg: ~/8up):
-```
-#!/bin/bash
-cd ~/sugardocker
-docker-compose -f stacks/sugar8/php71.yml up -d
-```
-
-Stop (eg: ~/8down):
-```
-#!/bin/bash
-cd ~/sugardocker
-docker-compose -f stacks/sugar8/php71.yml down
-```
-
-Making sure that the bash script is executable with `chmod +x <script>`.
-
 ### Setup Sugar instance to leverage Redis object caching
 Add on `config_override.php` the following options:
 ```
@@ -182,19 +208,19 @@ Make sure there are no other caching mechanism enabled on your config/config_ove
 ### Run command line command or script
 To run a PHP script execute something like the following sample commands:
 ```
-docker@docker:~/sugardocker$ docker exec -it sugar-cron bash -c "cd .. && php repair.php --instance sugar"
-Debug: Entering directory sugar
+docker@docker:~/sugardocker$ ./utilities/runcli.sh "php ../repair.php --instance ."
+Debug: Entering directory .
 Repairing...
-Completed in 6 seconds
+Completed in 8 seconds
 ```
 
 ```
-docker@docker:~/sugardocker$ docker exec sugar-cron bash -c "whoami"
+docker@docker:~/sugardocker$ ./utilities/runcli.sh "whoami"
 sugar
 ```
 
 ```
-docker@docker:~/sugardocker$ docker exec sugar-cron bash -c "pwd"
+docker@docker:~/sugardocker$ ./utilities/runcli.sh "pwd"
 /var/www/html/sugar
 ```
 
@@ -206,7 +232,7 @@ XHProf extension is configured on PHP 5.6 stacks, while Tideways extension is co
 
 To enable profiling:
 * Add [this custom code](https://gist.github.com/esimonetti/4c84541d49ee0828b31de91d30bcedb0) into your Sugar installation and repair the system (only if leveraging Tideways). Please note that the custom code does not have a namespace which is **intentional**. Adding a namespace will cause the profiling implementation to not find the TidewaysProf class.
-* Configure `config_override.php` specific settings (see below based on the stack extension) 
+* Configure `config_override.php` specific settings (see below based on the stack extension)
 
 XHProf Sugar `config_override.php` configuration:
 ```
