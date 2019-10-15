@@ -5,12 +5,9 @@ This repository will help you deploy a Docker based development full stack for S
 There are few stacks available, with in itself multiple platform combinations. You can read more about the specific stacks on the links below:
 * [Sugar 9](stacks/sugar9/README.md)
 * [Sugar 83](stacks/sugar83/README.md) - For local development to apply to Sugar Cloud only versions
-* [Sugar 82](stacks/sugar82/README.md) - For local development to apply to Sugar Cloud only versions
-* [Sugar 81](stacks/sugar81/README.md) - For local development to apply to Sugar Cloud only versions
 * [Sugar 8](stacks/sugar8/README.md)
-* [Sugar 710 or Sugar 711](stacks/sugar710/README.md) - For local development to apply to Sugar Cloud only versions
-* [Sugar 79](stacks/sugar79/README.md)
-* [Sugar 79 upgraded to a future version](stacks/sugar79upgrade/README.md)
+
+You will find additional stacks within the [stack directory of the project](stacks).
 
 ### Types of stacks
 There are mainly two types of stack:
@@ -36,11 +33,13 @@ There are multiple stack components as docker containers, that perform different
 * Run `docker-compose -f <stack yml filename> up -d` for the selected <stack yml filename>. As an example if we selected `stacks/sugar8/php71.yml`, you would run `docker-compose -f stacks/sugar8/php71.yml up -d`
 
 ## Current version support
-The main stacks work with [Sugar version 8.0 and all its platform requirements](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_8.0.x_Supported_Platforms/). Additional stacks are aligned with the platform requirements of version [7.9](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_7.9.x_Supported_Platforms/) and the Sugar Cloud only versions: 7.10/7.11, 8.1, 8.2 and 8.3.
+The main stacks work with [Sugar version 9.0 and all its platform requirements](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_9.0.x_Supported_Platforms/). Additional stacks are aligned with the platform requirements of version [8.0](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_8.0.x_Supported_Platforms/), [7.9](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_7.9.x_Supported_Platforms/) and the Sugar Cloud only versions: 7.10/7.11, 8.1, 8.2 and 8.3.
 
 ## Starting and stopping the desired stack
 * Run the stack with `docker-compose -f <stack yml filename> up -d`
 * Stop the stack with `docker-compose -f <stack yml filename> down`
+
+To facilitate the task of starting and stopping stacks and to switch between them, is available [this utility script](https://github.com/esimonetti/SugarDockerized#stacksh).
 
 ## System's details
 
@@ -120,26 +119,25 @@ Alternatively the limit can be increased runtime with:
 `sudo sysctl -w vm.max_map_count=262144`
 
 ### Docker images
-* `images/elasticsearch/175/` - Elasticsearch 1.7.5
-* `images/elasticsearch/54/` - Elasticsearch 5.4
-* `images/elasticsearch/56/` - Elasticsearch 5.6
-* `images/elasticsearch/62/` - Elasticsearch 6.2
-* `images/ldap/` - OpenLDAP
-* `images/loadbalancer/` - Apache load balancer
-* `images/mysql/57/` - MySQL 5.7
-* `images/permissions/` - Permissions fixing container image
-* `images/php/56/apache/` - Apache with PHP 5.6
-* `images/php/56/cron/` - PHP 5.6 CLI for background jobs
-* `images/php/71/apache/` - Apache with PHP 7.1
-* `images/php/71/cron/` - PHP 7.1 CLI for background jobs
+* `images/php/XY/apache/` - Image for Apache with PHP version X.X
+* `images/php/XY/cron/` - Image for PHP version X.Y, for background jobs and any CLI need
+* `images/mysql/XY/` - Image for MySQL version X.Y
+* `images/elasticsearch/XY/` - Image for Elasticsearch X.Y
+* `images/permissions/` - Image for permissions fixing container
+* `images/loadbalancer/` - Image for Apache load balancer
+* `images/jmeter/` - Image for Jmeter
+* `images/sidecar-build/` - Image for building Sidecar's javascript
+* `images/traefik/` - Traefik image to expose Sugar within the local network when using a VM
+* `images/ldap/` - OpenLDAP image
 
-All images are currently leveraging Debian linux.
+
+Most images are currently leveraging Debian linux.
 
 ### Persistent storage locations
 All persistent storage is located within the `./data` directory tree within your local checkout of this git repository.
 * The Sugar application files served from the web servers and leveraged by the cronjob server have to be located in `./data/app/sugar/`. Within the web servers and the cronjob server the location is `/var/www/html/sugar/`. Everything within `./data/app/` can be accessed through the browser, but the Sugar instance files have to be within `./data/app/sugar/`
-* MySQL files are located in `./data/mysql/57/`
-* For Elasticsearch 6.2 files are located in `./data/elasticsearch/62/`. For Elasticsearch 5.6 files are located in `./data/elasticsearch/56/` and so on.
+* MySQL files are located in `./data/mysql/XY/`
+* Elasticsearch files are located in `./data/elasticsearch/XY/`
 * Redis files are located in `./data/redis/`
 * LDAP files are located in `./data/ldap/`
 
@@ -152,17 +150,17 @@ This setup is designed to run only a single Sugar instance. It also requires the
 3. Cronjob background process running
 
 For the above reasons the single instance Sugar's files have to be located inside `./data/app/sugar/` (without subdirectories), for the stack setup to be working as expected.
-If you do need multiple instances (eg: a Sugar version 8 and a version 7.9), as long as they are not running at the same time, you can leverage the provided tools to replicate and swap the data directories.
+If you do need multiple instances, as long as they are not running at the same time, you can leverage the provided tools to replicate and swap the data directories.
 
 ## Tips
 ### Utilities
-To help with development, there are a set of tools within the `utilities` directory of the repository.
+To help with development, there are a set of tools provided within the `utilities` [directory of this repository](utilities). Some of the scripts are mentioned below.
 #### setownership.sh
 ```./utilities/setownership.sh```
 ```
 All directories and files within "data" are now owned by uid:gid 1000:1000
 ```
-It sets the correct ownership of the data directory
+It sets the correct ownership of the data directories
 #### stack.sh
 ```./utilities/stack.sh 80 down```
 ```
@@ -182,8 +180,12 @@ Removing sugar-elasticsearch ... done
 Removing network sugar8_default
 No stopped containers
 ```
-It helps to take the default stack for the sugar version passed as a parameter, up or down. It expects two parameters: version number (eg: 79, 80 etc) and up/down.
-Have a look at the configuration file `./utilities/stacks.conf`, to know all the available stack combinations for the script.
+It helps to take the default stack for the sugar version passed as a parameter, up or down. It expects two parameters: version number (eg: 80, 90 etc) and up/down.
+Have a look at the configuration file `./utilities/stacks.conf`, to know all the available stack combinations for the script. For some of the main stacks is available the "local" version of the stack, that allows local modification of settings and local docker image building.
+#### runcli.sh
+```./utilities/runcli.sh "php ./bin/sugarcrm password:weak"```
+It helps to execute a command within the CLI container. It requires the stack to be on
+
 #### backup.sh
 ```./utilities/backup.sh 802_2018_11_21```
 ```
@@ -193,7 +195,7 @@ Application files backed up on backups/backup_802_2018_11_21/sugar
 Database backed up on backups/backup_802_2018_11_21/sugar.sql
 ```
 It takes a snapshot of sugar files on `backups/backup_802_2018_11_21/sugar` and a MySQL database dump on `backups/backup_802_2018_11_21/sugar.sql`.
-The script assumes that the database name is sugar and the web directory is sugar as well.
+The script assumes that the database name is sugar and the web directory is sugar as well. The script does not take backups of Elasticsearch and/or Redis.
 #### restore.sh
 ```./utilities/restore.sh 802_2018_11_21```
 ```
@@ -208,7 +210,7 @@ Repair completed in 9 seconds.
 System repaired
 ```
 It restores a previous snapshot of sugar files from `backups/backup_802_2018_11_21/sugar` and of MySQL from `backups/backup_802_2018_11_21/sugar.sql`
-The script assumes that the database name is sugar and the web directory is sugar as well.
+The script assumes that the database name is sugar and the web directory is sugar as well. The script does not restore Elasticsearch and/or Redis.
 #### copysystem.sh
 ```./utilities/copysystem.sh data_80_clean data_80_clean_copy```
 ```
@@ -216,7 +218,7 @@ Copying "data_80_clean" to "data_80_clean_copy"
 Copying data_80_clean to data_80_clean_copy
 Copy completed, you can now swap or start the system
 ```
-It helps to replicate a full `data_80_clean` content to another backup directory of choice (`data_80_clean_copy`). It requires the stack to be off (and it will check for it)
+It helps to replicate a full `data_80_clean` content to another backup directory of choice (`data_80_clean_copy`). It requires the stack to be off (and it will check for it). This is most useful when there is the need to copy over also the content of Elasticsearch, Redis etc.
 #### swapsystems.sh
 ```./utilities/swapsystems.sh backup_2018_06_28 data_80_clean```
 ```
@@ -226,9 +228,6 @@ Moving data_80_clean to data
 You can now start the system with the content of data_80_clean
 ```
 It helps to move the current `data` directory to `backup_2018_06_28` and then `data_80_clean` to `data`, effectively swapping the current data in use. It requires the stack to be off (and it will check for it)
-#### runcli.sh
-```./utilities/runcli.sh "php ./bin/sugarcrm password:weak"```
-It helps to execute a command within the CLI container. It requires the stack to be on
 
 ### Detect web server PHP error logs
 To be able to achieve this consistently, it is recommended to leverage the single web server stack.
