@@ -1,0 +1,21 @@
+version: '2.1'
+
+services:
+    web1:
+          container_name: "sugar-web1"
+          environment:
+            - DOCKER_API_VERSION=1.24
+            - COMPOSE_API_VERSION=1.24
+          build:
+              context: ../../images/php/56/iis
+              dockerfile: Dockerfile
+          ports:
+              - "80:80"
+          #extra_hosts:
+          #    - "docker.local:127.0.0.1"
+          volumes:
+              - ..\..\data\app:C:\inetpub\wwwroot
+
+# $SugarDockerized_root > docker-compose -f stacks/sugar79/php56-iis-sql.yml up -d
+#
+#

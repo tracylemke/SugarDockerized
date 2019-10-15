@@ -3,6 +3,9 @@ This repository will help you deploy a Docker based development full stack for S
 
 ## Stacks available
 There are few stacks available, with in itself multiple platform combinations. You can read more about the specific stacks on the links below:
+* [Sugar 9](stacks/sugar9/README.md)
+* [Sugar 83](stacks/sugar83/README.md) - For local development to apply to Sugar Cloud only versions
+* [Sugar 82](stacks/sugar82/README.md) - For local development to apply to Sugar Cloud only versions
 * [Sugar 81](stacks/sugar81/README.md) - For local development to apply to Sugar Cloud only versions
 * [Sugar 8](stacks/sugar8/README.md)
 * [Sugar 710 or Sugar 711](stacks/sugar710/README.md) - For local development to apply to Sugar Cloud only versions
@@ -28,11 +31,12 @@ There are multiple stack components as docker containers, that perform different
 ## Get the system up and running
 * The first step for everything to work smoothly, is to add on your computer's host file /etc/hosts the entry "docker.local" to point to your machine's ip (it might be 127.0.0.1 if running the stack locally or within the VM running Docker)
 * Clone the repository with `git clone https://github.com/esimonetti/SugarDockerized.git sugardocker` and enter sugardocker with `cd sugardocker`
+* Run the utility `./utilities/setownership.sh` to set the correct ownership of the data directory
 * Select the stack combination to run by choosing the correct yml file within the subdirectories inside [stacks](stacks/). See next step for more details and an example.
 * Run `docker-compose -f <stack yml filename> up -d` for the selected <stack yml filename>. As an example if we selected `stacks/sugar8/php71.yml`, you would run `docker-compose -f stacks/sugar8/php71.yml up -d`
 
 ## Current version support
-The main stacks work with [Sugar version 8.0 and all its platform requirements](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_8.0.x_Supported_Platforms/). Additional stacks are aligned with the platform requirements of version [7.9](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_7.9.x_Supported_Platforms/) and the Sugar Cloud only versions: 7.10/7.11 and 8.1.
+The main stacks work with [Sugar version 8.0 and all its platform requirements](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_8.0.x_Supported_Platforms/). Additional stacks are aligned with the platform requirements of version [7.9](http://support.sugarcrm.com/Resources/Supported_Platforms/Sugar_7.9.x_Supported_Platforms/) and the Sugar Cloud only versions: 7.10/7.11, 8.1, 8.2 and 8.3.
 
 ## Starting and stopping the desired stack
 * Run the stack with `docker-compose -f <stack yml filename> up -d`
@@ -80,7 +84,8 @@ Apache web servers have enabled:
 ### PHP additional information
 Apache web servers have PHP with enabled:
 * Zend OPcache - Configured for Sugar with the assumption the files will be located within the correct path
-* Xdebug
+* XHProf and Tideways profilers
+* Xdebug is installed but it is not enabled by default (due to its performance impact). If there is the need to enable it, you would have to uncomment the configuration option on the PHP Dockerfile of choice, and leverage the stack configuration with local build.
     * If you use an IDE such as PHPStorm, you can setup DBGp Proxy under the menus Preference -> Language & Framework -> PHP -> Debug -> DBGp Proxy. Example settings are available in the screenshot below:
 
       <img width="1026" alt="PHPStorm xdebug settings" src="https://user-images.githubusercontent.com/361254/38972661-d48661f6-4356-11e8-9245-ad598239fe94.png">
@@ -101,7 +106,6 @@ Apache web servers have PHP with enabled:
           <img width="948" alt="Debug with Postman" src="https://user-images.githubusercontent.com/361254/43094521-0cf97058-8e68-11e8-8fc3-303c513dc1e9.png">
           <img width="679" alt="Postman cookie setting for remote debug" src="https://user-images.githubusercontent.com/361254/43094713-9190640c-8e68-11e8-95e0-11b866e452d4.png">
 
-* XHProf or Tideways profilers depending on the version
 
 Session storage is completed leveraging the Redis container.
 
@@ -153,6 +157,12 @@ If you do need multiple instances (eg: a Sugar version 8 and a version 7.9), as 
 ## Tips
 ### Utilities
 To help with development, there are a set of tools within the `utilities` directory of the repository.
+#### setownership.sh
+```./utilities/setownership.sh```
+```
+All directories and files within "data" are now owned by uid:gid 1000:1000
+```
+It sets the correct ownership of the data directory
 #### stack.sh
 ```./utilities/stack.sh 80 down```
 ```
@@ -172,7 +182,33 @@ Removing sugar-elasticsearch ... done
 Removing network sugar8_default
 No stopped containers
 ```
-It helps to take the default stack for the sugar version passed as a parameter, up or down. It expects two parameters: version number (eg: 79, 80, 81) and up/down
+It helps to take the default stack for the sugar version passed as a parameter, up or down. It expects two parameters: version number (eg: 79, 80 etc) and up/down.
+Have a look at the configuration file `./utilities/stacks.conf`, to know all the available stack combinations for the script.
+#### backup.sh
+```./utilities/backup.sh 802_2018_11_21```
+```
+Backing up sugar to "backups/backup_802_2018_11_21"
+[sudo] password for docker: 
+Application files backed up on backups/backup_802_2018_11_21/sugar
+Database backed up on backups/backup_802_2018_11_21/sugar.sql
+```
+It takes a snapshot of sugar files on `backups/backup_802_2018_11_21/sugar` and a MySQL database dump on `backups/backup_802_2018_11_21/sugar.sql`.
+The script assumes that the database name is sugar and the web directory is sugar as well.
+#### restore.sh
+```./utilities/restore.sh 802_2018_11_21```
+```
+Restoring sugar from "backups/backup_802_2018_11_21"
+sugar-permissions
+Application files restored
+Database "sugar" dropped
+Database restored
+Debug: Entering directory .
+Repairing...
+Repair completed in 9 seconds.
+System repaired
+```
+It restores a previous snapshot of sugar files from `backups/backup_802_2018_11_21/sugar` and of MySQL from `backups/backup_802_2018_11_21/sugar.sql`
+The script assumes that the database name is sugar and the web directory is sugar as well.
 #### copysystem.sh
 ```./utilities/copysystem.sh data_80_clean data_80_clean_copy```
 ```
@@ -247,10 +283,10 @@ If needed, sudo is available as well without the need of entering a password. Ju
 
 ### XHProf / Tideways profiling data collection
 
-XHProf extension is configured on PHP 5.6 stacks, while Tideways extension is configured on PHP 7.1 stacks.
+Both XHProf extension and Tideways extensions are configured in most stacks.
 
 To enable profiling:
-* Add [this custom code](https://gist.github.com/esimonetti/4c84541d49ee0828b31de91d30bcedb0) into your Sugar installation and repair the system (only if leveraging Tideways). Please note that the custom code does not have a namespace which is **intentional**. Adding a namespace will cause the profiling implementation to not find the TidewaysProf class.
+* If you choose to use Tideways, add [this custom code](https://github.com/esimonetti/SugarTidewaysProfiling) to your Sugar installation and repair the system.
 * Configure `config_override.php` specific settings (see below based on the stack extension)
 
 XHProf Sugar `config_override.php` configuration:
@@ -264,7 +300,7 @@ $sugar_config['xhprof_config']['flags'] = 0;
 Tideways Sugar `config_override.php` configuration:
 ```
 $sugar_config['xhprof_config']['enable'] = true;
-$sugar_config['xhprof_config']['manager'] = 'TidewaysProf';
+$sugar_config['xhprof_config']['manager'] = 'SugarTidewaysProf';
 $sugar_config['xhprof_config']['log_to'] = '../profiling';
 $sugar_config['xhprof_config']['sample_rate'] = 1;
 $sugar_config['xhprof_config']['flags'] = 0;
