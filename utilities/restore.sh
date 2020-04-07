@@ -26,6 +26,12 @@ else
         cd $REPO
 
         BACKUP_DIR="backups/backup_$1"
+        # check if the backup name has been provided including the backup_ prefix
+        if [ ! -d $BACKUP_DIR ] && [ -d "backups/$1" ]
+        then
+            BACKUP_DIR="backups/$1"
+        fi
+
         echo Restoring sugar from \"$BACKUP_DIR\"
 
         # if it is our repo, and the source exists, and the destination does not
@@ -38,9 +44,7 @@ else
             echo Restoring application files
             sudo rsync -a $BACKUP_DIR/sugar data/app/
             echo Application files restored
-            echo Fixing permissions
-            docker start sugar-permissions
-            echo Permissions fixed
+
             echo Restoring database
             docker exec -it sugar-mysql mysqladmin -h localhost -f -u root -proot drop sugar | grep -v "mysqladmin: \[Warning\]"
             docker exec -it sugar-mysql mysqladmin -h localhost -u root -proot create sugar | grep -v "mysqladmin: \[Warning\]"
@@ -69,18 +73,14 @@ else
                     rm $BACKUP_DIR/sugar.sql
                 fi
             fi
+
+            # refresh all transient storages
+            ./utilities/build/refreshsystem.sh
+
             echo Repairing system
-            ./utilities/runcli.sh php ../repair.php --instance .
+            ./utilities/repair.sh
             echo System repaired
-            echo Restarting cron
-            docker restart sugar-cron
-            echo Cron restarted
-            echo Removing existing Elasticsearch indices
-            for index in $(./utilities/runcli.sh "curl -f 'http://sugar-elasticsearch:9200/_cat/indices' -Ss | awk '{print \$3}'")
-            do
-                ./utilities/runcli.sh "curl -f -XDELETE 'http://sugar-elasticsearch:9200/$index' -Ss -o /dev/null"
-            done
-            echo Elasticsearch indices removed
+
             echo Performing Elasticsearch re-index
             ./utilities/runcli.sh "./bin/sugarcrm search:silent_reindex"
             echo Restore completed!

@@ -24,6 +24,8 @@ RUN apt-get clean \
 RUN adduser sugar --disabled-password --disabled-login --gecos "" \
     && echo "sugar ALL=NOPASSWD: ALL" > /etc/sudoers.d/sugar
 
+RUN echo "<?php \$_SERVER['SERVER_SOFTWARE'] = 'SugarDockerized';" > /usr/local/php/prepend.php
+
 RUN echo 'date.timezone = GMT' >> /usr/local/etc/php/conf.d/docker.ini \
     && echo 'error_reporting = E_ALL \& ~E_WARNING \& ~E_NOTICE \& ~E_STRICT \& ~E_DEPRECATED' >> /usr/local/etc/php/conf.d/docker.ini \
     && echo 'error_log = /proc/1/fd/1' >> /usr/local/etc/php/conf.d/docker.ini \
@@ -33,7 +35,9 @@ RUN echo 'date.timezone = GMT' >> /usr/local/etc/php/conf.d/docker.ini \
     && echo 'max_execution_time = -1' >> /usr/local/etc/php/conf.d/docker.ini \
     && echo 'realpath_cache_size = 512k' >> /usr/local/etc/php/conf.d/docker.ini \
     && echo 'realpath_cache_ttl = 600' >> /usr/local/etc/php/conf.d/docker.ini \
-    && echo 'mbstring.func_overload = 0' >> /usr/local/etc/php/conf.d/docker.ini
+    && echo 'phar.readonly = false' >> /usr/local/etc/php/conf.d/docker.ini \
+    && echo 'mbstring.func_overload = 0' >> /usr/local/etc/php/conf.d/docker.ini \
+    && echo 'auto_prepend_file = "/usr/local/php/prepend.php"' >> /usr/local/etc/php/conf.d/docker.ini
 
 RUN docker-php-ext-install mysqli \
     && docker-php-ext-install bcmath \
@@ -44,6 +48,7 @@ RUN docker-php-ext-install mysqli \
     && docker-php-ext-install imap \
     && docker-php-ext-install zip \
     && docker-php-ext-install ldap \
+    && docker-php-ext-install pcntl \
     # problem for xdebug 2.6.1 with php 7.3rc (https://bugs.xdebug.org/view.php?id=1584)
     && pecl install xdebug-2.7.0beta1 \
     && pecl install redis \
